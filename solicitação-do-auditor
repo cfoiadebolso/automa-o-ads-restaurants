@@ -1,0 +1,142 @@
+PROMPT PARA LLM — GUIA TÉCNICO DE PREPARO PARA PRODUÇÃO (ESTILO FEYNMAN, SEM CÓDIGO)
+
+Você é um arquiteto de sistemas e tech lead. Sua tarefa é produzir um guia técnico completo, exaustivo e executável para levar o produto a produção. Explique cada passo como Feynman: clareza brutal, causalidade explícita, sem atalhos mentais, sem jargão não definido. Proibido adiar tarefas (“fazer depois”, “fica para o futuro”), proibido incluir código (nem snippets, comandos ou pseudocódigo). O resultado deve permitir que uma equipe execute o plano de ponta a ponta apenas lendo e seguindo as instruções.
+
+1) Contexto-base (não altere; use como requisitos)
+
+Produto: microSaaS que conecta Meta Ads a cardápios digitais, gerando landing pages por campanha, com pixel/trackings, proposta multi-tenant, Supabase como núcleo (Auth/DB/Storage), frontend com Next.js/Tailwind/TS e integrações via no-code/low-code quando apropriado. 
+
+Fluxos essenciais já definidos: onboarding com OAuth Meta Ads → conexão de cardápio (provedor ou CSV/Sheets) → escolha de plano (trial 14 dias) → sugestão automática da primeira campanha baseada no prato mais vendido; dashboard com KPIs (“Clicks”, “Conversions”, “ROAS estimado”, “Top selling items”); criação de campanha via wizard; estados excepcionais (integração falha, assinatura expirada, usuário inativo). 
+
+Arquitetura e módulos: Auth/roles com RLS; tabelas users, restaurants, campaigns, menus, landing_pages, subscriptions; Storage para imagens; integrações: Meta Ads (OAuth, leitura/criação de campanhas, pixel), Menu providers (Goomer, MenuDino) com fallback CSV/Sheets; Billing (Stripe/Paddle); landing pages dinâmicas em /r/[restaurant]/[campaign-slug] com UTM; no-code automations (n8n/Make) para e-mails, relatórios e sync com CRMs. 
+
+Valor e escopo no-code/low-code: backend de automações (n8n/Make), dados em Airtable/Postgres quando aplicável; landing pages auto-geradas; workspace isolado por restaurante. 
+
+UI e navegação já concebidas: Dashboard, Campaigns, Landing Pages, Menu, Analytics, Billing, Coupons, Retargeting, Settings; FAQ, white-label/domínio próprio, exportações CSV/PDF. 
+ 
+ 
+
+2) Objetivo do seu trabalho
+
+Produzir um GUIA TÉCNICO DE PRODUÇÃO que transforme o contexto acima em um plano operacional: cada decisão, cada configuração, cada checklist, cada critério de aceite — sem escrever código. O resultado deve ser auto-suficiente e verificável por auditoria técnica.
+
+3) Formato obrigatório da sua saída
+
+Estruture em seções numeradas; em cada seção, forneça:
+
+Propósito (o que é e por que existe).
+
+Entradas/saídas (artefatos, dados, estados).
+
+Passos executáveis (bullet points granulares, sem código).
+
+Critérios de aceitação (condições objetivas de “pronto”).
+
+Riscos & mitigação (lista mínima de 3 por seção).
+
+Métricas & verificações (o que medir e como validar).
+
+4) Seções que você DEVE entregar (nesta ordem)
+
+Visão Executiva e Escopo Imutável
+
+Declare o que entra e o que não entra (com base no contexto-base).
+
+Liste suposições e dependências explícitas.
+
+Arquitetura de Alto Nível (sem diagramas gráficos; descreva em texto)
+
+Frontend (Next.js/Tailwind/TS) e limites; “frontend nunca manipula tokens diretos da Meta Ads” (explique implicação). 
+
+Supabase como núcleo (Auth/DB/Storage) com RLS multi-tenant e roles owner, staff, agency (detalhe políticas e razões). 
+
+Camada de automações no-code (n8n/Make): responsabilidades, gatilhos, limites. 
+
+Modelo de Dados Conceitual
+
+Descreva entidades e relacionamentos (users, restaurants, campaigns, menus, landing_pages, subscriptions), chaves de segregação por tenant e implicações de RLS. Sem DDL. 
+
+Gestão de Identidade, Acesso e Multi-Tenancy
+
+Regras de RLS por entidade; mapeamento de roles para permissões; segregação de dados entre restaurantes e agências. 
+
+Integração com Meta Ads
+
+OAuth: fluxos, armazenamento seguro de tokens (backend/secret store), renovação/expiração, revogação.
+
+Operações previstas: leitura/criação de campanhas, associação de tracking pixel; limites de taxa; circuit-breakers e backoff. 
+
+Integração com Cardápios
+
+Provedores suportados (exemplos) e contrato mínimo; fallback via CSV/Google Sheets quando API falhar ou não existir; como validar consistência dos itens. 
+
+Landing Pages Dinâmicas
+
+Padrão de URL /r/[restaurant]/[campaign-slug]; requisitos de mobile-first, desempenho, UTM tracking, mapeamento de CTA para o item do cardápio; governança de templates. 
+
+Billing & Planos
+
+Fluxo de assinatura (Stripe/Paddle), trial de 14 dias, estados de cobrança; comportamento em assinatura expirada (bloqueio suave). 
+ 
+
+Onboarding e Jornadas Críticas
+
+Passo a passo do onboarding (conta, OAuth Meta, cardápio, plano, sugestão de campanha) com estados excepcionais e fallbacks (conta demo, upload manual). 
+
+Funcionalidades Complementares e White-Label
+
+Coupons, retargeting audiences (UI pronta; backend pendente), multi-restaurant para agências, domínio próprio e branding, relatórios CSV/PDF, notificações. Diferencie o que vai a produção agora vs. flag de feature para rollout seguro. 
+
+Segurança, Privacidade e Conformidade
+
+Gestão de segredos, controles de acesso, armazenamento de tokens, criptografia em trânsito/repouso, logs auditáveis, princípios de LGPD aplicados (minimização, finalidade, retenção). (Fundamente em primeiros princípios; sem código.)
+
+Observabilidade e Confiabilidade
+
+Métricas (negócio: ROAS, conversões; técnica: latência, erro, saturação), logs estruturados, rastreamento de integrações, painéis e alertas; SLOs/SLAs mínimos; runbooks de incidentes.
+
+Desempenho e Orçamentos (Performance Budgets)
+
+Orçamentos de tempo de carregamento das landing pages, limites de payload, estratégias de cache/edge, limites de chamadas a APIs externas.
+
+Ambientes, Infra e Deploy
+
+Ambientes (dev/staging/prod), estratégia de CI/CD (gates, checks, artefatos), domínios e SSL, roteamento de subdomínios para campanhas, backup/restore, migrações; estratégia de rollout (canário/feature flags), rollback e verificação pós-deploy.
+
+Planos de Teste
+
+Testes de aceitação ponta a ponta por fluxo crítico (onboarding, criação de campanha, geração de landing page, conversão rastreada, billing). Inclua listas de casos, dados de teste e critérios objetivos de aprovação — sem scripts de automação.
+
+Playbooks Operacionais
+
+Rotinas diárias/semanais (checagens de integrações, expiração de tokens, reconciliação de assinaturas), manutenção programada, comunicação ao cliente.
+
+Matriz RACI e Plano de Execução
+
+Responsáveis por cada seção; dependências; timeline com marcos e artefatos; definição de “saída de porta” para produção.
+
+Riscos Sistêmicos & Decisões Arquiteturais
+
+Registre decisões (ADRs) e seus trade-offs; riscos (vendor lock-in, limites de API, fraude em cupons, inconsistência de cardápio) e mitigação.
+
+Checklist de Prontidão para Produção
+
+Lista única “go/no-go” com verificação binária por item (segurança, privacidade, observabilidade, desempenho, recuperação de desastre, faturamento, suporte, documentação).
+
+Apêndices
+
+Catálogo de variáveis de ambiente e segredos (nome, propósito, onde configurar; sem valores), catálogo de erros e mensagens por integração (Meta Ads, cardápio, billing), glossário e FAQ técnico.
+
+5) Regras de qualidade (avalie a si mesmo ao final)
+
+Exatidão por primeiros princípios: explique por que cada decisão é necessária para o produto descrito (não por costume).
+
+Exaustividade sem código: se algo depender de configuração, descreva a sequência, os pré-requisitos e a validação do resultado — mas nunca escreva comandos ou trechos de código.
+
+Verificabilidade: para cada passo, inclua uma forma objetiva de confirmar que a etapa foi concluída corretamente.
+
+Alinhamento com o escopo dado: respeite os módulos e fluxos já definidos (Campaigns, Landing Pages, Menu, Analytics, Billing, Coupons, Retargeting, Settings; white-label, relatórios, notificações; URLs de landing pages; RLS/roles; n8n/Make; fallback CSV/Sheets). 
+ 
+ 
+
+Entregue o guia agora, seguindo rigorosamente tudo acima.

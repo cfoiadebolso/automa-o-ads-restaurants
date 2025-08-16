@@ -1,0 +1,427 @@
+# 🚀 GUIA COMPLETO DE PRODUÇÃO
+## Sistema 100% Funcional - Passos Externos Únicos
+
+> **Explicação Feynman:** Este guia te leva do zero ao sistema funcionando em produção. Cada passo é essencial e está na ordem correta. Não pule nenhum!
+
+---
+
+## 🎯 SPRINT 1: FUNDAÇÃO (2-3 horas)
+### Objetivo: Sistema básico rodando com dados reais
+
+### 📝 PASSO 1: SUPABASE (Backend Completo)
+
+#### 1.1 Criar Projeto
+1. Acesse [supabase.com](https://supabase.com)
+2. Clique "New Project"
+3. Nome: `automa-ads-production`
+4. Senha forte (anote!)
+5. Região: `South America (São Paulo)`
+6. **ANOTE:** `Project URL` e `anon public key`
+
+#### 1.2 Configurar Database
+No painel Supabase → SQL Editor → New Query:
+
+```sql
+-- 1. Tabela de restaurantes (base do sistema)
+CREATE TABLE restaurants (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  phone VARCHAR(20),
+  address TEXT,
+  logo_url TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 2. Tabela de cardápios
+CREATE TABLE menus (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  restaurant_id UUID REFERENCES restaurants(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 3. Tabela de itens do cardápio
+CREATE TABLE menu_items (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  menu_id UUID REFERENCES menus(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  price DECIMAL(10,2) NOT NULL,
+  category VARCHAR(100),
+  image_url TEXT,
+  is_available BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 4. Habilitar segurança (RLS)
+ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE menus ENABLE ROW LEVEL SECURITY;
+ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
+
+-- 5. Políticas de segurança (usuário só vê seus dados)
+CREATE POLICY "Restaurantes próprios" ON restaurants
+  FOR ALL USING (auth.uid()::text = id::text);
+
+CREATE POLICY "Cardápios próprios" ON menus
+  FOR ALL USING (
+    restaurant_id IN (
+      SELECT id FROM restaurants WHERE auth.uid()::text = id::text
+    )
+  );
+
+CREATE POLICY "Itens próprios" ON menu_items
+  FOR ALL USING (
+    menu_id IN (
+      SELECT m.id FROM menus m
+      JOIN restaurants r ON m.restaurant_id = r.id
+      WHERE auth.uid()::text = r.id::text
+    )
+  );
+
+-- 6. Função para criar restaurante automaticamente
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO restaurants (id, email, name)
+  VALUES (NEW.id, NEW.email, COALESCE(NEW.raw_user_meta_data->>'name', 'Novo Restaurante'));
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 7. Trigger para auto-criar restaurante no cadastro
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+```
+
+#### 1.3 Configurar Autenticação
+1. Supabase → Authentication → Settings
+2. **Site URL:** `http://localhost:3000` (temporário)
+3. **Redirect URLs:** `http://localhost:3000/**`
+4. **Email Templates:** Personalize se quiser
+5. **Providers:** Habilite Email + Google (opcional)
+
+### 📝 PASSO 2: VERCEL (Deploy + Hospedagem)
+
+#### 2.1 Preparar Deploy
+1. Acesse [vercel.com](https://vercel.com)
+2. Login com GitHub
+3. "Import Project" → Conecte seu repositório
+4. **Framework:** Detecta React automaticamente
+5. **Root Directory:** deixe vazio
+
+#### 2.2 Configurar Variáveis de Ambiente
+No Vercel → Settings → Environment Variables:
+
+```bash
+# Supabase (obrigatório)
+REACT_APP_SUPABASE_URL=https://seu-projeto.supabase.co
+REACT_APP_SUPABASE_ANON_KEY=sua-chave-anon
+
+# ASAAS (obrigatório para billing)
+REACT_APP_ASAAS_API_KEY=sua-chave-asaas
+REACT_APP_ASAAS_SANDBOX=true
+ASAAS_WEBHOOK_SECRET=seu-webhook-secret
+
+# Meta Ads (opcional por enquanto)
+REACT_APP_META_APP_ID=seu-app-id
+REACT_APP_META_APP_SECRET=seu-app-secret
+```
+
+#### 2.3 Deploy
+1. Clique "Deploy"
+2. Aguarde build (2-3 minutos)
+3. **ANOTE:** URL do Vercel (ex: `https://seu-app.vercel.app`)
+
+### 📝 PASSO 3: DOMÍNIO PERSONALIZADO
+
+#### 3.1 Configurar no Vercel
+1. Vercel → Settings → Domains
+2. Adicione: `seudominio.com`
+3. **ANOTE:** Registros DNS necessários
+
+#### 3.2 Configurar DNS
+No seu provedor de domínio:
+```
+Tipo: CNAME
+Nome: @
+Valor: cname.vercel-dns.com
+
+Tipo: CNAME
+Nome: www
+Valor: cname.vercel-dns.com
+```
+
+#### 3.3 Atualizar Supabase
+1. Supabase → Authentication → Settings
+2. **Site URL:** `https://seudominio.com`
+3. **Redirect URLs:** `https://seudominio.com/**`
+
+### ✅ TESTE SPRINT 1
+1. Acesse `https://seudominio.com`
+2. Cadastre-se com email
+3. Confirme email
+4. Crie um cardápio
+5. Adicione itens
+6. Acesse página pública: `https://seudominio.com/menu/seu-id`
+
+**✅ RESULTADO:** Sistema básico 100% funcional!
+
+---
+
+## 🎯 SPRINT 2: PAGAMENTOS (1-2 horas)
+### Objetivo: Sistema de cobrança funcionando
+
+### 📝 PASSO 4: ASAAS (Gateway de Pagamento)
+
+#### 4.1 Criar Conta ASAAS
+1. Acesse [asaas.com](https://asaas.com)
+2. Cadastre-se como empresa
+3. Complete verificação
+4. Acesse API → Chaves
+5. **ANOTE:** Chave de Produção
+
+#### 4.2 Configurar Produtos
+1. ASAAS → Cobrança → Planos
+2. Crie planos:
+   - **Básico:** R$ 97/mês
+   - **Pro:** R$ 197/mês
+   - **Enterprise:** R$ 397/mês
+3. **ANOTE:** IDs dos planos
+
+#### 4.3 Configurar Webhooks
+1. ASAAS → Integrações → Webhooks
+2. URL: `https://seudominio.com/api/webhooks/asaas`
+3. Eventos: `PAYMENT_CONFIRMED`, `PAYMENT_OVERDUE`
+4. **ANOTE:** Secret do webhook
+
+#### 4.4 Atualizar Variáveis
+Vercel → Environment Variables:
+```bash
+# Atualizar ASAAS
+REACT_APP_ASAAS_API_KEY=sua-chave-producao
+REACT_APP_ASAAS_SANDBOX=false
+ASAAS_WEBHOOK_SECRET=seu-webhook-secret-real
+```
+
+### 📝 PASSO 5: EXPANDIR DATABASE
+Supabase → SQL Editor:
+
+```sql
+-- 1. Tabela de planos
+CREATE TABLE plans (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  asaas_plan_id VARCHAR(255) UNIQUE NOT NULL,
+  features JSONB,
+  max_menus INTEGER,
+  max_items INTEGER,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 2. Tabela de assinaturas
+CREATE TABLE subscriptions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  restaurant_id UUID REFERENCES restaurants(id) ON DELETE CASCADE,
+  plan_id UUID REFERENCES plans(id),
+  asaas_subscription_id VARCHAR(255) UNIQUE,
+  status VARCHAR(50) DEFAULT 'active',
+  current_period_start TIMESTAMP,
+  current_period_end TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 3. Inserir planos padrão
+INSERT INTO plans (name, price, asaas_plan_id, max_menus, max_items) VALUES
+('Básico', 97.00, 'plan_basic', 1, 50),
+('Pro', 197.00, 'plan_pro', 3, 150),
+('Enterprise', 397.00, 'plan_enterprise', 10, 500);
+
+-- 4. Habilitar RLS
+ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+
+-- 5. Política de segurança
+CREATE POLICY "Assinaturas próprias" ON subscriptions
+  FOR ALL USING (restaurant_id IN (
+    SELECT id FROM restaurants WHERE auth.uid()::text = id::text
+  ));
+```
+
+### ✅ TESTE SPRINT 2
+1. Acesse billing no dashboard
+2. Escolha um plano
+3. Complete pagamento
+4. Verifique assinatura ativa
+
+**✅ RESULTADO:** Sistema de cobrança funcionando!
+
+---
+
+## 🎯 SPRINT 3: META ADS (2-3 horas)
+### Objetivo: Campanhas publicitárias funcionando
+
+### 📝 PASSO 6: META FOR DEVELOPERS
+
+#### 6.1 Criar App Business
+1. Acesse [developers.facebook.com](https://developers.facebook.com)
+2. "Criar App" → "Business"
+3. Nome: `Automa Ads - Produção`
+4. Email de contato
+
+#### 6.2 Configurar Marketing API
+1. App → Adicionar Produto → "Marketing API"
+2. Configurações básicas
+3. **ANOTE:** App ID e App Secret
+
+#### 6.3 Solicitar Permissões
+1. App Review → Permissões
+2. Solicite:
+   - `ads_management`
+   - `ads_read`
+   - `business_management`
+3. Preencha formulário detalhado
+4. Aguarde aprovação (1-3 dias)
+
+#### 6.4 Configurar Webhook
+1. Produtos → Webhooks
+2. URL: `https://seudominio.com/api/webhooks/meta`
+3. Eventos: `campaign_status_change`
+
+### 📝 PASSO 7: EXPANDIR DATABASE PARA ADS
+Supabase → SQL Editor:
+
+```sql
+-- 1. Tabela de campanhas
+CREATE TABLE ad_campaigns (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  restaurant_id UUID REFERENCES restaurants(id) ON DELETE CASCADE,
+  menu_id UUID REFERENCES menus(id),
+  name VARCHAR(255) NOT NULL,
+  meta_campaign_id VARCHAR(255),
+  budget DECIMAL(10,2),
+  status VARCHAR(50) DEFAULT 'draft',
+  target_audience JSONB,
+  creative_assets JSONB,
+  performance_data JSONB,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 2. Habilitar RLS
+ALTER TABLE ad_campaigns ENABLE ROW LEVEL SECURITY;
+
+-- 3. Política de segurança
+CREATE POLICY "Campanhas próprias" ON ad_campaigns
+  FOR ALL USING (restaurant_id IN (
+    SELECT id FROM restaurants WHERE auth.uid()::text = id::text
+  ));
+```
+
+#### 6.5 Atualizar Variáveis
+Vercel → Environment Variables:
+```bash
+# Meta Ads (agora obrigatório)
+REACT_APP_META_APP_ID=seu-app-id-real
+REACT_APP_META_APP_SECRET=seu-app-secret-real
+REACT_APP_META_ACCESS_TOKEN=seu-token-aprovado
+```
+
+### ✅ TESTE SPRINT 3
+1. Crie uma campanha
+2. Configure público-alvo
+3. Defina orçamento
+4. Publique campanha
+5. Monitore performance
+
+**✅ RESULTADO:** Sistema de ads funcionando!
+
+---
+
+## 🎯 SPRINT 4: MONITORAMENTO (1 hora)
+### Objetivo: Sistema monitorado e otimizado
+
+### 📝 PASSO 8: SENTRY (Monitoramento de Erros)
+
+#### 8.1 Configurar Sentry
+1. Acesse [sentry.io](https://sentry.io)
+2. Criar projeto React
+3. **ANOTE:** DSN
+4. Configure alertas por email
+
+#### 8.2 Atualizar Variáveis
+```bash
+REACT_APP_SENTRY_DSN=seu-dsn-sentry
+```
+
+### 📝 PASSO 9: GOOGLE ANALYTICS
+
+#### 9.1 Configurar GA4
+1. Acesse [analytics.google.com](https://analytics.google.com)
+2. Criar propriedade
+3. **ANOTE:** Measurement ID
+
+#### 9.2 Atualizar Variáveis
+```bash
+REACT_APP_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+```
+
+### 📝 PASSO 10: UPTIME ROBOT
+
+#### 10.1 Configurar Monitoramento
+1. Acesse [uptimerobot.com](https://uptimerobot.com)
+2. Adicionar monitor HTTP
+3. URL: `https://seudominio.com`
+4. Intervalo: 5 minutos
+5. Configure alertas
+
+### ✅ TESTE SPRINT 4
+1. Force um erro e veja no Sentry
+2. Navegue e veja no Analytics
+3. Verifique uptime no UptimeRobot
+
+**✅ RESULTADO:** Sistema monitorado!
+
+---
+
+## 🎯 CHECKLIST FINAL
+
+### ✅ SISTEMA 100% FUNCIONAL:
+- [ ] Supabase configurado e funcionando
+- [ ] Deploy no Vercel realizado
+- [ ] Domínio personalizado ativo
+- [ ] ASAAS configurado e cobrando
+- [ ] Meta Ads criando campanhas
+- [ ] Monitoramento ativo
+- [ ] SSL/HTTPS funcionando
+- [ ] Autenticação segura
+- [ ] CRUD completo funcionando
+- [ ] Páginas públicas acessíveis
+
+### 🚀 PRÓXIMOS PASSOS (OPCIONAIS):
+1. **Landing Page Builder** (Sprint 5)
+2. **White-Label** (Sprint 6)
+3. **Automações** (Sprint 7)
+4. **IA Avançada** (Sprint 8)
+
+---
+
+## ⚡ RESUMO EXECUTIVO
+
+**Tempo Total:** 6-9 horas
+**Custo Mensal:** ~R$ 200 (Supabase + Vercel + ASAAS)
+**Resultado:** Sistema completo funcionando em produção
+
+**Ordem OBRIGATÓRIA:**
+1. Supabase (base de dados)
+2. Vercel (hospedagem)
+3. Domínio (acesso público)
+4. ASAAS (pagamentos)
+5. Meta Ads (campanhas)
+6. Monitoramento (estabilidade)
+
+**⚠️ IMPORTANTE:** Não pule passos! Cada um depende do anterior.
+
+**🎯 META:** Ao final, você terá um SaaS completo gerando receita!
