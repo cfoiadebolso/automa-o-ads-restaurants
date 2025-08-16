@@ -1,0 +1,85 @@
+Beleza, vamos estruturar a ideia a partir dos **primeiros princípios**:
+
+Você quer:
+
+1. **MicroSaaS** → simples, modular, escalável.
+2. **Integração Meta Ads + Cardápios Digitais** → ponte entre tráfego pago e vendas diretas.
+3. **Onboarding plug & play** → zero fricção para o restaurante.
+4. **Automatizado** → operação mínima, SaaS replicável a outros usuários.
+5. **Backend no-code/low-code** → custo baixo, manutenção simples.
+6. **Filosofia KISS** → só o essencial.
+
+---
+
+## Ideia de MicroSaaS
+
+**Nome de trabalho**: *Click2Order Ads Bridge*
+
+### Problema real
+
+Restaurantes investem em anúncios no Meta Ads (Facebook/Instagram), mas o **clique muitas vezes morre no WhatsApp** ou em links mal otimizados. Isso gera atrito e perda de vendas.
+
+### Solução essencial
+
+Um **MicroSaaS que conecta automaticamente os anúncios de Meta Ads ao cardápio digital** (já existente do restaurante), criando:
+
+* **Landing pages dinâmicas por campanha/adset** → cada clique do anúncio leva direto para um **cardápio filtrado** (ex: promoção do hambúrguer leva direto ao hambúrguer no cardápio).
+* **Pixel + conversão integrada** → rastreio automático dos pedidos realizados no cardápio, devolvendo dados reais para otimização no Meta Ads (CPA real, não só cliques).
+* **Automação de campanhas** → sugerir/criar campanhas baseadas nos pratos mais vendidos (dados do cardápio).
+
+### Como funciona (fluxo plug & play)
+
+1. Usuário cria conta no MicroSaaS.
+2. Conecta sua conta do Meta Ads (OAuth).
+3. Conecta seu cardápio digital (via integração com provedores como Goomer, MenuDino, or próprio QR menu).
+4. O SaaS gera automaticamente:
+
+   * Tracking de conversão.
+   * Landing pages dinâmicas personalizadas.
+   * Sugestão de campanhas otimizadas.
+5. Restaurante só escolhe quais promoções quer rodar → todo o resto é automático.
+
+---
+
+## Arquitetura simples (no-code/low-code)
+
+* **Backend**: n8n / Make para automações + Airtable/Postgres para dados.
+* **Frontend/Portal**: Bubble ou Webflow para o painel do usuário.
+* **Integrações**:
+
+  * Meta Ads API (criação de campanhas e tracking).
+  * Cardápio digital via API (ou scraping estruturado se não houver).
+* **Landing Pages**: auto-geradas em Webflow/Subdomínio (com parâmetros UTM).
+* **Escalabilidade**: estrutura modular → cada restaurante = 1 workspace isolado.
+
+---
+
+## Valor para o restaurante
+
+* Mais vendas porque cada anúncio leva direto ao prato promocional.
+* Mais inteligência porque ele **sabe quais pratos vendem mais via ads**.
+* Mais simplicidade: onboarding em minutos.
+
+---
+
+## Valor para você
+
+* Produto escalável, replicável e distribuível como microSaaS.
+* Cobrança recorrente (ex: R\$99-R\$199/mês).
+* Mínima operação (tudo automatizado).
+
+---
+
+👉 A essência: **Um SaaS que transforma anúncios do Meta Ads em vendas rastreáveis de pratos, sem fricção, com landing pages automáticas e tracking real.**
+
+---
+
+Essa estrutura te permite iterar em três frentes críticas, de forma rápida e modular:
+
+Crescimento de valor → adicionar upsells (ex: cupons dinâmicos, remarketing automático, recomendações de combos).
+
+Expansão de integrações → conectar novos cardápios digitais, CRMs de delivery, POS.
+
+Otimização de performance → melhorar tracking (ROAS real, LTV por prato), testes A/B de landing pages.
+
+Ou seja: iterar fácil em features de receita, integrações e inteligência de dados sem refazer a base.

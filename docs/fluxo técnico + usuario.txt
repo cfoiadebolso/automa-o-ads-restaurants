@@ -1,0 +1,173 @@
+Beleza, vamos aprofundar de forma estruturada, sem perder clareza. Vou expandir tanto o **fluxo técnico** (camadas, dados, segurança, modularidade) quanto o **fluxo do usuário** (experiência completa, incluindo estados excepcionais).
+
+---
+
+# 🔹 Fluxo Técnico (Arquitetura em Profundidade)
+
+### 1. **Frontend (Next.js + Tailwind + TypeScript)**
+
+* **Motivo:** SSR garante velocidade e SEO (essencial para páginas dinâmicas de promoções).
+* **Componentização:** UI dividida em blocos reutilizáveis (Dashboard, Landing Builder, Campaign Wizard).
+* **Camada de dados:** React Query garante cache otimizado e estados claros (loading, error, empty).
+* **Segurança:** Todas as chamadas passam pelo Supabase Auth JWT → o frontend nunca manipula tokens diretos da Meta Ads.
+
+---
+
+### 2. **Supabase (Auth + Database + Storage)**
+
+* **Auth**
+
+  * Suporte a e-mail/password e login social.
+  * Roles:
+
+    * `owner` (restaurante/admin),
+    * `staff` (restrito),
+    * `agency` (multi-restaurante).
+  * RLS (Row Level Security): cada usuário só acessa dados do seu restaurante.
+
+* **Database (Postgres)**
+
+  * Estrutura multi-tenant:
+
+    * `users`: credenciais e roles.
+    * `restaurants`: metadata, branding, integrações.
+    * `campaigns`: linkadas ao restaurante.
+    * `menus`: items, categorias, promo flags.
+    * `landing_pages`: config/layout, slug.
+    * `subscriptions`: plano ativo, billing status.
+
+* **Storage**
+
+  * Upload de imagens (ex: fotos dos pratos) diretamente para Supabase Storage.
+
+---
+
+### 3. **Integrações (placeholders até backend)**
+
+* **Meta Ads API:**
+
+  * OAuth → salva tokens (apenas referência no Supabase até backend consumir).
+  * Estrutura já preparada para:
+
+    * Ler campanhas,
+    * Criar campanhas,
+    * Atribuir tracking pixel.
+
+* **Menu Providers:**
+
+  * Dropdown com provedores (Goomer, MenuDino, etc.).
+  * Genérico: upload CSV ou Google Sheet.
+  * UI trata erros (se API falhar, usuário pode usar CSV).
+
+* **Stripe/Paddle (Billing):**
+
+  * UI pronta para upgrade/downgrade plano.
+  * Status da assinatura armazenado em Supabase.
+
+---
+
+### 4. **Landing Pages**
+
+* Geradas dinamicamente com base no template.
+* Estrutura: `/r/[restaurant]/[campaign-slug]`.
+* Configurável no Landing Page Builder (drag-and-drop de seções).
+* Mobile-first, carregamento rápido, UTM tracking embutido.
+* Conexão automática com item do cardápio → botão CTA direciona para pedido.
+
+---
+
+### 5. **Escalabilidade & Modularidade**
+
+* Cada cliente isolado logicamente (multi-tenant no Supabase).
+* Arquitetura modular → novos blocos de UI (ex: retargeting, cupons) adicionados sem retrabalho.
+* No-code automation (n8n/Make) pode ser acoplado para:
+
+  * disparar e-mails,
+  * gerar relatórios agendados,
+  * sincronizar dados com CRMs externos.
+
+---
+
+# 🔹 Fluxo do Usuário (Experiência em Profundidade)
+
+### **1. Onboarding (primeira vez)**
+
+* **Passo 1:** Criação de conta (Google ou e-mail).
+* **Passo 2:** Wizard → “Connect Meta Ads” (OAuth).
+
+  * Se sucesso → continua.
+  * Se falhar → UI mostra instruções + fallback (usar conta demo até resolver).
+* **Passo 3:** Conectar cardápio.
+
+  * Se provedor suportado → login API.
+  * Se não suportado → upload CSV/manual.
+* **Passo 4:** Escolher plano (trial de 14 dias automático).
+* **Passo 5:** Primeira sugestão de campanha criada automaticamente (baseada no prato mais vendido).
+
+---
+
+### **2. Dashboard (uso recorrente)**
+
+* Vê KPIs em cards:
+
+  * “Clicks”, “Conversions”, “ROAS estimado”, “Top selling items”.
+* Gráficos interativos (Recharts).
+* Estado inteligente:
+
+  * **Novo usuário:** mostra mensagens educativas e dicas.
+  * **Usuário ativo:** mostra métricas reais.
+  * **Erro em integração:** alerta + botão “corrigir integração”.
+
+---
+
+### **3. Criar Campanha (journey crítica)**
+
+* Botão **“New Campaign”** abre Wizard.
+* Etapas:
+
+  1. Escolher prato (do cardápio sincronizado).
+  2. Sistema sugere: título, descrição e imagem.
+  3. Selecionar orçamento diário.
+  4. Pré-visualizar Landing Page (auto-gerada com prato escolhido).
+  5. Confirmar → campanha criada (placeholder até backend efetivar).
+
+---
+
+### **4. Landing Page Builder**
+
+* Tela com editor drag-and-drop.
+* Componentes: Hero, Product Highlight, Testimonials, CTA.
+* Preview mobile e desktop.
+* Cada campanha ganha uma página dedicada → subdomínio do SaaS.
+* Usuário pode customizar cores e logotipo.
+
+---
+
+### **5. Extras (já disponíveis, não roadmap)**
+
+* **Coupons:** UI gera códigos → aparecem na landing page.
+* **Retargeting audiences:** UI mostra botões “Criar público” (backend pendente).
+* **Multi-restaurant:** Agências podem trocar entre clientes no painel.
+* **White-label:** Usuário adiciona domínio próprio + branding.
+* **Reports:** Botão exportar CSV/PDF.
+* **Notifications:** Alertas no painel (ex: “Campanha X sem pedidos nos últimos 3 dias”).
+
+---
+
+### **6. Estados Excepcionais**
+
+* **Erro Meta Ads:** interface indica desconexão, botão “Reconnect”.
+* **Menu sem itens:** wizard sugere upload CSV.
+* **Assinatura expirada:** bloqueio suave (mantém acesso mas com banners pedindo upgrade).
+* **Usuário inativo:** envio de notificação automática (via automação no-code).
+
+---
+
+# 📌 Essência Profunda
+
+* **Técnico:** Sistema modular, multi-tenant, com supabase como núcleo (auth, db, storage). Cada peça já preparada para integrar backend, mas frontend totalmente navegável, escalável e robusto.
+* **Usuário:** Jornada fluida, guiada, plug & play. Mesmo sem conhecimento de marketing ou tecnologia, o dono de restaurante consegue criar campanhas e landing pages que realmente convertem → sem fricção.
+
+---
+
+Quer que eu **modele esse fluxo em um blueprint visual** (arquitetura + user journey juntos em um só diagrama), para consolidar a visão em algo mais tangível?

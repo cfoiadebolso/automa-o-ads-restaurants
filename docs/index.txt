@@ -1,0 +1,1161 @@
+import React, { useState, useEffect, createContext, useContext } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { Users, Settings, Bell, DollarSign, BarChart2, FileText, ShoppingBag, Megaphone, LayoutTemplate, Gift, Target, Lightbulb, Building, Star, LogOut, ChevronDown, ChevronUp, PlusCircle, Search, Filter, MoreVertical, Edit, Trash2, ExternalLink, Download, Eye, Code, Palette, Globe, HelpCircle, X } from 'lucide-react';
+
+// Dados Mock (Simulados) -----------------------------------------------------------------
+const mockKpis = {
+  clicks: 12450,
+  conversoes: 830,
+  roas: 4.7,
+  gasto: 2650.50,
+};
+
+const mockChartData = [
+  { nome: 'Jan', gasto: 400, conversoes: 240 },
+  { nome: 'Fev', gasto: 300, conversoes: 139 },
+  { nome: 'Mar', gasto: 200, conversoes: 980 },
+  { nome: 'Abr', gasto: 278, conversoes: 390 },
+  { nome: 'Mai', gasto: 189, conversoes: 480 },
+  { nome: 'Jun', gasto: 239, conversoes: 380 },
+  { nome: 'Jul', gasto: 349, conversoes: 430 },
+];
+
+const mockTopItems = [
+  { nome: 'Spicy Tuna Roll', vendas: 320, receita: 4800 },
+  { nome: 'Pizza Margherita', vendas: 250, receita: 4250 },
+  { nome: 'Hambúrguer Clássico', vendas: 180, receita: 2700 },
+  { nome: 'Pad Thai', vendas: 150, receita: 2250 },
+];
+
+const mockCampaigns = [
+  { id: 'cam_1', nome: 'Especial de Sushi de Verão', status: 'Ativa', gasto: 750, conversoes: 120, roas: 5.2, landingPage: 'sushi-verao' },
+  { id: 'cam_2', nome: 'Promoção de Pizza Fim de Semana', status: 'Pausada', gasto: 400, conversoes: 65, roas: 4.1, landingPage: 'pizza-promo' },
+  { id: 'cam_3', nome: 'Combo de Hambúrguer no Almoço', status: 'Concluída', gasto: 1500, conversoes: 300, roas: 6.0, landingPage: 'combo-burger' },
+  { id: 'cam_4', nome: 'Noodles de Ano Novo', status: 'Ativa', gasto: 950, conversoes: 150, roas: 4.8, landingPage: 'noodles-anonovo' },
+];
+
+const mockMenuItems = [
+    { id: 'item_1', nome: 'Spicy Tuna Roll', preco: 15.00, categoria: 'Sushi', isPromo: true },
+    { id: 'item_2', nome: 'Pizza Margherita', preco: 17.00, categoria: 'Pizza', isPromo: false },
+    { id: 'item_3', nome: 'Hambúrguer Clássico', preco: 15.00, categoria: 'Hambúrgueres', isPromo: true },
+    { id: 'item_4', nome: 'Pad Thai', preco: 15.00, categoria: 'Noodles', isPromo: false },
+    { id: 'item_5', nome: 'Salada Caesar', preco: 12.00, categoria: 'Saladas', isPromo: false },
+];
+
+const mockRecommendations = [
+    { titulo: 'Oportunidade de Upsell', descricao: 'Clientes que compram "Hambúrguer Clássico" também costumam pedir "Batatas Fritas". Crie um combo.'},
+    { titulo: 'Anúncio de Alta Performance', descricao: 'A sua campanha "Especial de Sushi de Verão" tem uma taxa de cliques 20% maior. Considere aumentar o orçamento.'},
+    { titulo: 'Novo Segmento de Público', descricao: 'Crie uma campanha de retargeting para utilizadores que visitaram a sua página de pizza mas não fizeram um pedido.'},
+];
+
+const mockNotifications = [
+    { id: 1, text: "A sua campanha 'Especial de Sushi de Verão' atingiu 80% do orçamento.", time: "Há 2 horas", read: false },
+    { id: 2, text: "Nova integração disponível: Uber Eats.", time: "Há 1 dia", read: false },
+    { id: 3, text: "O relatório de desempenho semanal está pronto.", time: "Há 3 dias", read: true },
+];
+
+const mockCoupons = [
+    { id: 'c_1', code: 'VERAO10', discount: '10%', campaign: 'Especial de Sushi de Verão', active: true },
+    { id: 'c_2', code: 'PIZZA5', discount: 'R$ 5', campaign: 'Promoção de Pizza Fim de Semana', active: true },
+    { id: 'c_3', code: 'ALMOCO', discount: '15%', campaign: 'Combo de Hambúrguer no Almoço', active: false },
+];
+
+// Contexto da Aplicação para Gestão de Estado -------------------------------------------
+const AppContext = createContext();
+
+const AppProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [currentRestaurant, setCurrentRestaurant] = useState({ id: 'resto_1', name: 'The Gourmet Place' });
+  const [onboardingStep, setOnboardingStep] = useState(0);
+
+  // Simula a verificação de autenticação
+  useEffect(() => {
+    setTimeout(() => {
+      setUser({ name: 'Joana Silva', email: 'joana.silva@example.com', role: 'Admin do Restaurante' });
+      setLoading(false);
+    }, 1500);
+  }, []);
+
+  const login = (email, password) => {
+    setLoading(true);
+    setTimeout(() => {
+        setUser({ name: 'Joana Silva', email: 'joana.silva@example.com', role: 'Admin do Restaurante' });
+        setOnboardingStep(0); // Reinicia para o início do onboarding para demonstração
+        setCurrentPage('onboarding');
+        setLoading(false);
+    }, 1000);
+  };
+
+  const logout = () => {
+    setUser(null);
+    setCurrentPage('login');
+  };
+
+  const value = {
+    user,
+    loading,
+    currentPage,
+    setCurrentPage,
+    logout,
+    login,
+    onboardingStep,
+    setOnboardingStep,
+    currentRestaurant,
+    setCurrentRestaurant
+  };
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  return (
+    <AppContext.Provider value={value}>
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+// Componente Principal da Aplicação --------------------------------------------------------
+const App = () => {
+  return (
+    <AppProvider>
+      <MainLayout />
+    </AppProvider>
+  );
+};
+
+const MainLayout = () => {
+  const { user, currentPage } = useContext(AppContext);
+
+  if (!user) {
+      return <AuthScreen />;
+  }
+  
+  if (currentPage === 'onboarding') {
+      return <OnboardingFlow />;
+  }
+
+  return (
+    <div className="flex h-screen bg-gray-50 font-sans">
+      <Sidebar />
+      <main className="flex-1 overflow-y-auto">
+        <Header />
+        <div className="p-4 md:p-8">
+          <PageContent />
+        </div>
+      </main>
+    </div>
+  );
+};
+
+const PageContent = () => {
+    const { currentPage } = useContext(AppContext);
+    switch (currentPage) {
+        case 'dashboard': return <Dashboard />;
+        case 'campaigns': return <CampaignManager />;
+        case 'landing-pages': return <LandingPageBuilder />;
+        case 'menu': return <MenuIntegration />;
+        case 'analytics': return <AnalyticsReporting />;
+        case 'billing': return <BillingSubscription />;
+        case 'coupons': return <CouponGenerator />;
+        case 'retargeting': return <RetargetingAudienceBuilder />;
+        case 'settings': return <SettingsPage />;
+        case 'faq': return <FAQPage />;
+        default: return <Dashboard />;
+    }
+};
+
+// Componentes -----------------------------------------------------------------
+
+const LoadingScreen = () => (
+    <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
+        <div className="text-center">
+            <h1 className="text-3xl font-bold mb-2">Click2Order Ads Bridge</h1>
+            <p className="text-lg text-gray-400">A conectar restaurantes a resultados.</p>
+            <div className="mt-8 animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+    </div>
+);
+
+const AuthScreen = () => {
+    const { login } = useContext(AppContext);
+    const [isLogin, setIsLogin] = useState(true);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        login(email, password);
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+            <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-lg">
+                <div className="text-center">
+                    <h2 className="text-3xl font-bold text-gray-900">Click2Order Ads Bridge</h2>
+                    <p className="mt-2 text-sm text-gray-600">
+                        {isLogin ? 'Faça login na sua conta' : 'Crie uma nova conta'}
+                    </p>
+                </div>
+                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+                    <div className="rounded-md shadow-sm -space-y-px">
+                        {!isLogin && (
+                             <div>
+                                <label htmlFor="name" className="sr-only">Nome do Restaurante</label>
+                                <input id="name" name="name" type="text" required className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" placeholder="Nome do Restaurante" />
+                            </div>
+                        )}
+                        <div>
+                            <label htmlFor="email-address" className="sr-only">Endereço de e-mail</label>
+                            <input id="email-address" name="email" type="email" autoComplete="email" required className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 ${isLogin ? 'rounded-t-md' : ''} focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`} placeholder="Endereço de e-mail" value={email} onChange={(e) => setEmail(e.target.value)} />
+                        </div>
+                        <div>
+                            <label htmlFor="password" className="sr-only">Palavra-passe</label>
+                            <input id="password" name="password" type="password" autoComplete="current-password" required className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" placeholder="Palavra-passe" value={password} onChange={(e) => setPassword(e.target.value)} />
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <div className="text-sm">
+                            <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+                                Esqueceu-se da sua palavra-passe?
+                            </a>
+                        </div>
+                    </div>
+
+                    <div>
+                        <button type="submit" className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            {isLogin ? 'Entrar' : 'Registar'}
+                        </button>
+                    </div>
+                </form>
+                 <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-white text-gray-500">Ou continue com</span>
+                    </div>
+                </div>
+                <div>
+                    <button type="button" className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fillRule="evenodd" d="M20 10c0-5.523-4.477-10-10-10S0 4.477 0 10c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V10h2.54V7.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V10h2.773l-.443 2.89h-2.33v6.988C16.343 19.128 20 14.991 20 10z" clipRule="evenodd" /></svg>
+                        <span>Conectar com Meta</span>
+                    </button>
+                </div>
+                <p className="text-center text-sm text-gray-600">
+                    {isLogin ? "Não tem uma conta?" : "Já tem uma conta?"}
+                    <button onClick={() => setIsLogin(!isLogin)} className="font-medium text-blue-600 hover:text-blue-500 ml-1">
+                        {isLogin ? 'Registe-se' : 'Entrar'}
+                    </button>
+                </p>
+            </div>
+        </div>
+    );
+};
+
+const OnboardingFlow = () => {
+    const { onboardingStep, setOnboardingStep, setCurrentPage } = useContext(AppContext);
+    const steps = ["Criar Conta", "Conectar Meta Ads", "Conectar Menu", "Gerar Página"];
+
+    const nextStep = () => setOnboardingStep(s => Math.min(s + 1, steps.length));
+    const prevStep = () => setOnboardingStep(s => Math.max(s - 1, 0));
+
+    const finishOnboarding = () => {
+        setCurrentPage('dashboard');
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
+            <div className="w-full max-w-2xl">
+                <h2 className="text-3xl font-bold text-center text-gray-900 mb-2">Bem-vindo ao Click2Order!</h2>
+                <p className="text-center text-gray-600 mb-8">Vamos configurar o seu restaurante em alguns passos simples.</p>
+                
+                <div className="mb-8">
+                    <div className="flex items-center justify-between">
+                        {steps.map((step, index) => (
+                            <React.Fragment key={step}>
+                                <div className="flex flex-col items-center text-center">
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${onboardingStep >= index ? 'bg-blue-600' : 'bg-gray-300'}`}>
+                                        {onboardingStep > index ? '✓' : index + 1}
+                                    </div>
+                                    <p className={`mt-2 text-sm ${onboardingStep >= index ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>{step}</p>
+                                </div>
+                                {index < steps.length - 1 && <div className={`flex-1 h-1 mx-2 ${onboardingStep > index ? 'bg-blue-600' : 'bg-gray-300'}`}></div>}
+                            </React.Fragment>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-lg p-8">
+                    {onboardingStep === 0 && <OnboardingStep1 next={nextStep} />}
+                    {onboardingStep === 1 && <OnboardingStep2 next={nextStep} prev={prevStep} />}
+                    {onboardingStep === 2 && <OnboardingStep3 next={nextStep} prev={prevStep} />}
+                    {onboardingStep === 3 && <OnboardingStep4 finish={finishOnboarding} prev={prevStep} />}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const OnboardingStep1 = ({ next }) => (
+    <div>
+        <h3 className="text-xl font-semibold mb-4">Passo 1: Detalhes da Conta</h3>
+        <p className="text-gray-600 mb-6">A sua conta foi criada. Vamos confirmar os detalhes do seu restaurante.</p>
+        <div className="space-y-4">
+            <input type="text" placeholder="Nome do Restaurante" defaultValue="The Gourmet Place" className="w-full p-3 border border-gray-300 rounded-md" />
+            <input type="text" placeholder="Website (Opcional)" className="w-full p-3 border border-gray-300 rounded-md" />
+        </div>
+        <button onClick={next} className="mt-6 w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700 transition">Continuar</button>
+    </div>
+);
+
+const OnboardingStep2 = ({ next, prev }) => (
+    <div>
+        <h3 className="text-xl font-semibold mb-4">Passo 2: Conectar ao Meta Ads</h3>
+        <p className="text-gray-600 mb-6">Conecte a sua conta do Meta (Facebook) Ads para importar as suas campanhas e acompanhar o desempenho automaticamente.</p>
+        <button className="w-full flex items-center justify-center gap-3 bg-[#1877F2] text-white py-3 rounded-md font-semibold hover:bg-opacity-90 transition">
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fillRule="evenodd" d="M20 10c0-5.523-4.477-10-10-10S0 4.477 0 10c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V10h2.54V7.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V10h2.773l-.443 2.89h-2.33v6.988C16.343 19.128 20 14.991 20 10z" clipRule="evenodd" /></svg>
+            Conectar com Meta
+        </button>
+        <div className="flex justify-between mt-6">
+            <button onClick={prev} className="text-gray-600 py-2 px-4 rounded-md hover:bg-gray-100 transition">Voltar</button>
+            <button onClick={next} className="bg-blue-600 text-white py-2 px-6 rounded-md font-semibold hover:bg-blue-700 transition">Continuar</button>
+        </div>
+    </div>
+);
+
+const OnboardingStep3 = ({ next, prev }) => (
+    <div>
+        <h3 className="text-xl font-semibold mb-4">Passo 3: Conecte o seu Menu Digital</h3>
+        <p className="text-gray-600 mb-6">Selecione o seu provedor de menu para sincronizar os seus itens, ou forneça um URL para o seu menu online.</p>
+        <select className="w-full p-3 border border-gray-300 rounded-md mb-4">
+            <option>Selecione um provedor...</option>
+            <option>Toast</option>
+            <option>Square</option>
+            <option>Clover</option>
+            <option>Uber Eats</option>
+        </select>
+        <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center"><span className="w-full border-t"></span></div>
+            <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">Ou</span></div>
+        </div>
+        <input type="url" placeholder="Insira o URL do menu público" className="w-full p-3 border border-gray-300 rounded-md" />
+        <div className="flex justify-between mt-6">
+            <button onClick={prev} className="text-gray-600 py-2 px-4 rounded-md hover:bg-gray-100 transition">Voltar</button>
+            <button onClick={next} className="bg-blue-600 text-white py-2 px-6 rounded-md font-semibold hover:bg-blue-700 transition">Continuar</button>
+        </div>
+    </div>
+);
+
+const OnboardingStep4 = ({ finish, prev }) => (
+    <div>
+        <h3 className="text-xl font-semibold mb-4">Passo 4: Gere a sua Primeira Landing Page</h3>
+        <p className="text-gray-600 mb-6">Criaremos um modelo de landing page bonito e de alta conversão com base na marca do seu restaurante.</p>
+        <div className="border border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <LayoutTemplate className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <p className="font-semibold">A sua landing page está a ser gerada...</p>
+            <div className="w-full bg-gray-200 rounded-full h-2.5 mt-4">
+                <div className="bg-blue-600 h-2.5 rounded-full w-3/4 animate-pulse"></div>
+            </div>
+        </div>
+        <div className="flex justify-between mt-6">
+            <button onClick={prev} className="text-gray-600 py-2 px-4 rounded-md hover:bg-gray-100 transition">Voltar</button>
+            <button onClick={finish} className="bg-green-600 text-white py-3 px-8 rounded-md font-semibold hover:bg-green-700 transition">Ir para o Painel</button>
+        </div>
+    </div>
+);
+
+const Sidebar = () => {
+  const { currentPage, setCurrentPage, logout } = useContext(AppContext);
+  const navItems = [
+    { id: 'dashboard', label: 'Painel', icon: BarChart2 },
+    { id: 'campaigns', label: 'Campanhas', icon: Megaphone },
+    { id: 'landing-pages', label: 'Landing Pages', icon: LayoutTemplate },
+    { id: 'menu', label: 'Menu', icon: ShoppingBag },
+    { id: 'analytics', label: 'Análises', icon: BarChart2 },
+    { id: 'billing', label: 'Faturação', icon: DollarSign },
+  ];
+  const secondaryNavItems = [
+    { id: 'coupons', label: 'Cupões', icon: Gift },
+    { id: 'retargeting', label: 'Retargeting', icon: Target },
+  ];
+
+  return (
+    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
+      <div className="h-16 flex items-center justify-center border-b border-gray-200">
+        <h1 className="text-xl font-bold text-blue-600">Click2Order</h1>
+      </div>
+      <nav className="flex-1 px-4 py-6 space-y-2">
+        {navItems.map(item => (
+          <NavItem key={item.id} item={item} active={currentPage === item.id} onClick={() => setCurrentPage(item.id)} />
+        ))}
+        <div className="pt-4 mt-4 border-t border-gray-200">
+          <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Ferramentas</h3>
+          <div className="mt-2 space-y-2">
+            {secondaryNavItems.map(item => (
+              <NavItem key={item.id} item={item} active={currentPage === item.id} onClick={() => setCurrentPage(item.id)} />
+            ))}
+          </div>
+        </div>
+      </nav>
+      <div className="px-4 py-4 border-t border-gray-200">
+        <NavItem item={{ id: 'faq', label: 'FAQ', icon: HelpCircle }} active={currentPage === 'faq'} onClick={() => setCurrentPage('faq')} />
+        <NavItem item={{ id: 'settings', label: 'Configurações', icon: Settings }} active={currentPage === 'settings'} onClick={() => setCurrentPage('settings')} />
+        <button onClick={logout} className="w-full flex items-center px-3 py-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-md text-sm font-medium">
+          <LogOut className="h-5 w-5 mr-3" />
+          Sair
+        </button>
+      </div>
+    </aside>
+  );
+};
+
+const NavItem = ({ item, active, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+      active ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+    }`}
+  >
+    <item.icon className="h-5 w-5 mr-3" />
+    {item.label}
+  </button>
+);
+
+const Header = () => {
+    const { user, currentRestaurant, setCurrentRestaurant } = useContext(AppContext);
+    const [restoDropdownOpen, setRestoDropdownOpen] = useState(false);
+    const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
+    const unreadNotifications = mockNotifications.filter(n => !n.read).length;
+
+    const restaurants = [
+        { id: 'resto_1', name: 'The Gourmet Place' },
+        { id: 'resto_2', name: 'Pizzaria do Centro' },
+        { id: 'resto_3', name: 'Sushi Central' },
+    ];
+
+    return (
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8">
+            <div className="flex items-center gap-4">
+                {user.role === 'Agência' && (
+                    <div className="relative">
+                        <button onClick={() => setRestoDropdownOpen(!restoDropdownOpen)} className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-100">
+                            <Building className="h-5 w-5 text-gray-500" />
+                            <span className="font-semibold">{currentRestaurant.name}</span>
+                            <ChevronDown className={`h-4 w-4 transition-transform ${restoDropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        {restoDropdownOpen && (
+                            <div className="absolute mt-2 w-64 bg-white rounded-md shadow-lg border z-10">
+                                <div className="p-2">
+                                    <input type="text" placeholder="Procurar restaurantes..." className="w-full px-2 py-1.5 border rounded-md text-sm" />
+                                </div>
+                                <ul className="max-h-60 overflow-y-auto">
+                                    {restaurants.map(r => (
+                                        <li key={r.id}>
+                                            <button onClick={() => { setCurrentRestaurant(r); setRestoDropdownOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{r.name}</button>
+                                        </li>
+                                    ))}
+                                </ul>
+                                <div className="p-2 border-t">
+                                    <button className="w-full flex items-center gap-2 text-sm text-blue-600 hover:bg-blue-50 p-2 rounded-md">
+                                        <PlusCircle className="h-4 w-4" /> Adicionar Novo Restaurante
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+            <div className="flex items-center gap-4">
+                <div className="relative">
+                    <button onClick={() => setNotificationsOpen(!notificationsOpen)} className="p-2 rounded-full hover:bg-gray-100 relative">
+                        <Bell className="h-6 w-6 text-gray-600" />
+                        {unreadNotifications > 0 && <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-white"></span>}
+                    </button>
+                    {notificationsOpen && (
+                        <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg border z-10">
+                           <div className="p-3 border-b font-semibold">Notificações</div>
+                           <ul className="max-h-80 overflow-y-auto">
+                               {mockNotifications.map(n => (
+                                   <li key={n.id} className={`p-3 border-b hover:bg-gray-50 ${!n.read ? 'bg-blue-50' : ''}`}>
+                                       <p className="text-sm text-gray-800">{n.text}</p>
+                                       <p className="text-xs text-gray-500 mt-1">{n.time}</p>
+                                   </li>
+                               ))}
+                           </ul>
+                           <div className="p-2 text-center">
+                               <button className="text-sm text-blue-600 hover:underline">Ver todas</button>
+                           </div>
+                        </div>
+                    )}
+                </div>
+                <div className="relative">
+                    <button onClick={() => setUserDropdownOpen(!userDropdownOpen)} className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100">
+                        <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">{user.name.charAt(0)}</div>
+                        <div className="hidden md:block text-left">
+                            <p className="font-semibold text-sm">{user.name}</p>
+                            <p className="text-xs text-gray-500">{user.role}</p>
+                        </div>
+                        <ChevronDown className={`h-4 w-4 text-gray-500 hidden md:block transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {userDropdownOpen && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border z-10 py-1">
+                            <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Perfil</a>
+                            <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Central de Ajuda</a>
+                            <div className="border-t my-1"></div>
+                            <button onClick={() => { const { logout } = useContext(AppContext); logout(); }} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Sair</button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </header>
+    );
+};
+
+const Dashboard = () => {
+    return (
+        <div className="space-y-8">
+            <h2 className="text-3xl font-bold text-gray-800">Painel</h2>
+            
+            {/* KPIs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <KpiCard title="Total de Cliques" value={mockKpis.clicks.toLocaleString('pt-BR')} change="+12.5%" icon={BarChart2} />
+                <KpiCard title="Conversões" value={mockKpis.conversoes.toLocaleString('pt-BR')} change="+8.2%" icon={Users} />
+                <KpiCard title="ROAS" value={`${mockKpis.roas}x`} change="-1.5%" isNegative />
+                <KpiCard title="Gasto Total" value={`R$ ${mockKpis.gasto.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} change="+20.1%" icon={DollarSign} />
+            </div>
+
+            {/* Gráfico Principal e Itens Mais Vendidos */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-sm">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Visão Geral do Desempenho</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={mockChartData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="nome" tick={{fontSize: 12}} />
+                            <YAxis tick={{fontSize: 12}} />
+                            <Tooltip formatter={(value, name) => [name === 'gasto' ? `R$ ${value}` : value, name === 'gasto' ? 'Gasto' : 'Conversões']} />
+                            <Legend />
+                            <Line type="monotone" dataKey="conversoes" stroke="#3b82f6" strokeWidth={2} name="Conversões" />
+                            <Line type="monotone" dataKey="gasto" stroke="#8b5cf6" strokeWidth={2} name="Gasto (R$)" />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+                <div className="bg-white p-6 rounded-lg shadow-sm">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Itens Mais Vendidos</h3>
+                    <ul className="space-y-4">
+                        {mockTopItems.map(item => (
+                            <li key={item.nome} className="flex justify-between items-center">
+                                <div>
+                                    <p className="font-medium text-gray-700">{item.nome}</p>
+                                    <p className="text-sm text-gray-500">{item.vendas} vendas</p>
+                                </div>
+                                <p className="font-semibold text-gray-800">R$ {item.receita.toLocaleString('pt-BR')}</p>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </div>
+
+            {/* Recomendações */}
+            <div>
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"><Lightbulb className="text-yellow-400" /> Recomendações de IA</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {mockRecommendations.map((rec, index) => (
+                        <div key={index} className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
+                            <h4 className="font-semibold text-gray-800">{rec.titulo}</h4>
+                            <p className="text-sm text-gray-600 mt-2">{rec.descricao}</p>
+                            <button className="text-sm text-blue-600 font-semibold mt-4 hover:underline">Agir agora</button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const KpiCard = ({ title, value, change, icon: Icon, isNegative = false }) => (
+    <div className="bg-white p-6 rounded-lg shadow-sm">
+        <div className="flex justify-between items-start">
+            <div>
+                <p className="text-sm font-medium text-gray-500">{title}</p>
+                <p className="text-3xl font-bold text-gray-800 mt-1">{value}</p>
+            </div>
+            {Icon && <div className="bg-blue-100 text-blue-600 p-3 rounded-full"><Icon className="h-6 w-6" /></div>}
+        </div>
+        <p className={`text-sm mt-2 ${isNegative ? 'text-red-500' : 'text-green-500'}`}>{change}</p>
+    </div>
+);
+
+const CampaignManager = () => {
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h2 className="text-3xl font-bold text-gray-800">Gestor de Campanhas</h2>
+                <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
+                    <PlusCircle className="h-5 w-5" /> Criar Campanha
+                </button>
+            </div>
+            
+            <div className="flex items-center gap-4">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input type="text" placeholder="Procurar campanhas..." className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg" />
+                </div>
+                <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100">
+                    <Filter className="h-5 w-5" /> Filtrar
+                </button>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                <table className="w-full">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nome da Campanha</th>
+                            <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Gasto</th>
+                            <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Conversões</th>
+                            <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">ROAS</th>
+                            <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                        {mockCampaigns.map(campaign => (
+                            <tr key={campaign.id}>
+                                <td className="p-4 whitespace-nowrap">
+                                    <div className="font-medium text-gray-900">{campaign.nome}</div>
+                                    <div className="text-sm text-gray-500">Landing Page: /{campaign.landingPage}</div>
+                                </td>
+                                <td className="p-4 whitespace-nowrap">
+                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                        campaign.status === 'Ativa' ? 'bg-green-100 text-green-800' : 
+                                        campaign.status === 'Pausada' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+                                    }`}>
+                                        {campaign.status}
+                                    </span>
+                                </td>
+                                <td className="p-4 whitespace-nowrap text-sm text-gray-700">R$ {campaign.gasto.toFixed(2)}</td>
+                                <td className="p-4 whitespace-nowrap text-sm text-gray-700">{campaign.conversoes}</td>
+                                <td className="p-4 whitespace-nowrap text-sm text-gray-700">{campaign.roas.toFixed(1)}x</td>
+                                <td className="p-4 whitespace-nowrap text-sm font-medium">
+                                    <div className="flex items-center gap-4">
+                                        <button className="text-blue-600 hover:text-blue-900"><Edit className="h-5 w-5" /></button>
+                                        <button className="text-gray-500 hover:text-gray-700"><ExternalLink className="h-5 w-5" /></button>
+                                        <button className="text-red-600 hover:text-red-900"><Trash2 className="h-5 w-5" /></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
+const LandingPageBuilder = () => {
+    const [previewMode, setPreviewMode] = useState('desktop');
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h2 className="text-3xl font-bold text-gray-800">Construtor de Landing Pages</h2>
+                <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
+                    <PlusCircle className="h-5 w-5" /> Nova Landing Page
+                </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Painel do Editor */}
+                <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-sm space-y-6">
+                    <div>
+                        <h3 className="font-semibold mb-2">Configurações da Página</h3>
+                        <label className="block text-sm font-medium text-gray-700">Slug da Página</label>
+                        <div className="flex items-center mt-1">
+                            <span className="text-sm text-gray-500 bg-gray-100 p-2 rounded-l-md border border-r-0">restaurante.click2order.app/</span>
+                            <input type="text" defaultValue="sushi-verao" className="flex-1 p-2 border rounded-r-md text-sm"/>
+                        </div>
+                    </div>
+                    <div className="border-t pt-6">
+                        <h3 className="font-semibold mb-4">Secções da Página</h3>
+                        <div className="space-y-3">
+                           <DraggableSection title="Secção Principal (Hero)" />
+                           <DraggableSection title="Destaques de Produtos" />
+                           <DraggableSection title="Sobre Nós" />
+                           <DraggableSection title="Chamada para Ação" />
+                        </div>
+                        <button className="mt-4 w-full flex items-center justify-center gap-2 text-sm border-2 border-dashed border-gray-300 text-gray-500 py-2 rounded-lg hover:border-blue-500 hover:text-blue-600 transition">
+                            <PlusCircle className="h-4 w-4" /> Adicionar Secção
+                        </button>
+                    </div>
+                </div>
+
+                {/* Painel de Pré-visualização */}
+                <div className="lg:col-span-2">
+                    <div className="flex justify-between items-center mb-4">
+                        <div className="flex items-center gap-2 bg-white p-1 rounded-lg border">
+                            <button onClick={() => setPreviewMode('mobile')} className={`px-3 py-1 text-sm rounded-md ${previewMode === 'mobile' ? 'bg-blue-600 text-white' : ''}`}>Telemóvel</button>
+                            <button onClick={() => setPreviewMode('desktop')} className={`px-3 py-1 text-sm rounded-md ${previewMode === 'desktop' ? 'bg-blue-600 text-white' : ''}`}>Desktop</button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button className="px-4 py-2 border rounded-lg text-sm">Guardar</button>
+                            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Publicar</button>
+                        </div>
+                    </div>
+                    <div className={`mx-auto bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 ${previewMode === 'mobile' ? 'w-[375px] h-[667px]' : 'w-full h-[667px]'}`}>
+                        <div className="h-full border-4 border-gray-800 rounded-lg overflow-y-auto">
+                           {/* Conteúdo Simulado da Landing Page */}
+                           <div className="bg-cover bg-center h-64" style={{backgroundImage: "url('https://placehold.co/800x400/f3f4f6/333?text=Imagem+Principal')"}}>
+                               <div className="bg-black bg-opacity-50 h-full flex flex-col justify-center items-center text-white p-4">
+                                   <h1 className="text-4xl font-bold">Especial de Sushi de Verão</h1>
+                                   <p className="mt-2">Fresco, delicioso e entregue à sua porta.</p>
+                               </div>
+                           </div>
+                           <div className="p-8">
+                               <h2 className="text-2xl font-bold text-center mb-6">Os Nossos Destaques</h2>
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                   <div className="border rounded-lg p-4 text-center">
+                                       <img src="https://placehold.co/300x200/e0e7ff/333?text=Spicy+Tuna" alt="Spicy Tuna Roll" className="rounded-md mx-auto mb-2" />
+                                       <h3 className="font-semibold">Spicy Tuna Roll</h3>
+                                       <p className="text-sm text-gray-600">R$ 15,00</p>
+                                   </div>
+                                    <div className="border rounded-lg p-4 text-center">
+                                       <img src="https://placehold.co/300x200/d1fae5/333?text=Dragon+Roll" alt="Dragon Roll" className="rounded-md mx-auto mb-2" />
+                                       <h3 className="font-semibold">Dragon Roll</h3>
+                                       <p className="text-sm text-gray-600">R$ 18,00</p>
+                                   </div>
+                               </div>
+                               <button className="mt-8 w-full bg-red-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-red-700">Pedir Agora</button>
+                           </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const DraggableSection = ({ title }) => (
+    <div className="flex items-center justify-between bg-gray-50 p-3 rounded-md border">
+        <span className="font-medium text-sm">{title}</span>
+        <div className="flex items-center gap-3">
+            <button className="text-gray-400 hover:text-gray-600"><Eye className="h-4 w-4" /></button>
+            <button className="text-gray-400 hover:text-gray-600 cursor-grab"><MoreVertical className="h-4 w-4" /></button>
+        </div>
+    </div>
+);
+
+const MenuIntegration = () => {
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h2 className="text-3xl font-bold text-gray-800">Integração de Menu</h2>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">Última sincronização: há 5 minutos</span>
+                    <button className="px-4 py-2 border rounded-lg text-sm font-semibold hover:bg-gray-100">Sincronizar Menu</button>
+                </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                <table className="w-full">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nome do Item</th>
+                            <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Categoria</th>
+                            <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Preço</th>
+                            <th className="p-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Item em Promoção</th>
+                            <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                        {mockMenuItems.map(item => (
+                            <tr key={item.id}>
+                                <td className="p-4 whitespace-nowrap font-medium text-gray-900">{item.nome}</td>
+                                <td className="p-4 whitespace-nowrap text-sm text-gray-700">{item.categoria}</td>
+                                <td className="p-4 whitespace-nowrap text-sm text-gray-700">R$ {item.preco.toFixed(2)}</td>
+                                <td className="p-4 whitespace-nowrap text-center">
+                                    <button className={`p-1 rounded-full ${item.isPromo ? 'bg-yellow-400 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                                        <Star className="h-5 w-5" />
+                                    </button>
+                                </td>
+                                <td className="p-4 whitespace-nowrap text-sm font-medium">
+                                    <button className="text-blue-600 hover:text-blue-900">Editar</button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
+const AnalyticsReporting = () => {
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h2 className="text-3xl font-bold text-gray-800">Análises e Relatórios</h2>
+                <button className="flex items-center gap-2 bg-gray-700 text-white px-4 py-2 rounded-lg font-semibold hover:bg-gray-800 transition">
+                    <Download className="h-5 w-5" /> Exportar Relatório
+                </button>
+            </div>
+
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white p-6 rounded-lg shadow-sm">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Desempenho da Campanha</h3>
+                     <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={mockCampaigns}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="nome" tick={{fontSize: 10}} />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="conversoes" fill="#3b82f6" name="Conversões" />
+                            <Bar dataKey="roas" fill="#8b5cf6" name="ROAS (x)" />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+                <div className="bg-white p-6 rounded-lg shadow-sm">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Funil de Conversão</h3>
+                    <div className="space-y-4">
+                        <FunnelStep label="Cliques" value={12450} percentage={100} color="bg-blue-500" />
+                        <FunnelStep label="Visualizações da Landing Page" value={9870} percentage={79.3} color="bg-indigo-500" />
+                        <FunnelStep label="Adições ao Carrinho" value={2150} percentage={17.3} color="bg-purple-500" />
+                        <FunnelStep label="Conversões" value={830} percentage={6.7} color="bg-green-500" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const FunnelStep = ({ label, value, percentage, color }) => (
+    <div>
+        <div className="flex justify-between items-center mb-1">
+            <span className="text-sm font-medium text-gray-700">{label}</span>
+            <span className="text-sm text-gray-500">{value.toLocaleString('pt-BR')} ({percentage}%)</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-4">
+            <div className={`${color} h-4 rounded-full`} style={{width: `${percentage}%`}}></div>
+        </div>
+    </div>
+);
+
+const BillingSubscription = () => {
+    const [plan, setPlan] = useState('pro');
+    return (
+        <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold text-gray-800 text-center">Planos e Faturação</h2>
+            <p className="text-center text-gray-600 mt-2">Escolha o plano certo para o seu negócio.</p>
+            
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+                <PlanCard title="Básico" price="49" features={["1 Restaurante", "5 Campanhas Ativas", "Análises Básicas", "Suporte por E-mail"]} current={plan === 'basic'} onSelect={() => setPlan('basic')} />
+                <PlanCard title="Pro" price="99" features={["5 Restaurantes", "Campanhas Ilimitadas", "Análises Avançadas", "Integração de Menu", "Suporte Prioritário"]} popular current={plan === 'pro'} onSelect={() => setPlan('pro')} />
+                <PlanCard title="Enterprise" price="Personalizado" features={["Restaurantes Ilimitados", "White-labeling", "Gestor de Conta Dedicado", "Acesso à API", "Suporte 24/7"]} current={plan === 'enterprise'} onSelect={() => setPlan('enterprise')} />
+            </div>
+
+            <div className="mt-12 bg-white p-8 rounded-lg shadow-sm">
+                <h3 className="text-xl font-bold">Detalhes de Pagamento</h3>
+                <div className="mt-4 border rounded-lg p-4 flex justify-between items-center">
+                    <div>
+                        <p className="font-semibold">Visa terminado em 1234</p>
+                        <p className="text-sm text-gray-500">Expira em 12/2025</p>
+                    </div>
+                    <button className="text-sm text-blue-600 font-semibold">Atualizar</button>
+                </div>
+                 <div className="mt-6">
+                    <h4 className="font-semibold">Histórico de Faturação</h4>
+                    <ul className="mt-2 divide-y">
+                        <li className="py-3 flex justify-between items-center">
+                            <div>
+                                <p>Plano Pro - Agosto 2025</p>
+                                <p className="text-sm text-gray-500">Pago em 1 de Ago, 2025</p>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <span>R$ 99,00</span>
+                                <a href="#" className="text-blue-600"><Download className="h-5 w-5" /></a>
+                            </div>
+                        </li>
+                         <li className="py-3 flex justify-between items-center">
+                            <div>
+                                <p>Plano Pro - Julho 2025</p>
+                                <p className="text-sm text-gray-500">Pago em 1 de Jul, 2025</p>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <span>R$ 99,00</span>
+                                <a href="#" className="text-blue-600"><Download className="h-5 w-5" /></a>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const PlanCard = ({ title, price, features, popular, current, onSelect }) => (
+    <div className={`border rounded-lg p-6 text-center relative ${current ? 'border-blue-500 ring-2 ring-blue-500' : 'border-gray-200'}`}>
+        {popular && <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full">POPULAR</div>}
+        <h3 className="text-lg font-semibold">{title}</h3>
+        <p className="text-4xl font-bold mt-4">R$ {price}<span className="text-base font-normal text-gray-500">/mês</span></p>
+        <ul className="mt-6 space-y-3 text-sm text-gray-600">
+            {features.map(f => <li key={f}>{f}</li>)}
+        </ul>
+        <button onClick={onSelect} className={`mt-8 w-full py-2 rounded-lg font-semibold ${current ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}>
+            {current ? 'Plano Atual' : 'Escolher Plano'}
+        </button>
+    </div>
+);
+
+const CouponGenerator = () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h2 className="text-3xl font-bold text-gray-800">Gerador de Cupões</h2>
+                <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
+                    <PlusCircle className="h-5 w-5" /> Criar Cupão
+                </button>
+            </div>
+            <p className="text-gray-600">Crie e gira códigos de desconto para associar às suas campanhas.</p>
+            
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                <table className="w-full">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Código do Cupão</th>
+                            <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Desconto</th>
+                            <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Campanha Associada</th>
+                            <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="p-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                        {mockCoupons.map(coupon => (
+                            <tr key={coupon.id}>
+                                <td className="p-4 font-mono text-sm text-gray-900">{coupon.code}</td>
+                                <td className="p-4 text-sm text-gray-700">{coupon.discount}</td>
+                                <td className="p-4 text-sm text-gray-700">{coupon.campaign}</td>
+                                <td className="p-4"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${coupon.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{coupon.active ? 'Ativo' : 'Inativo'}</span></td>
+                                <td className="p-4"><div className="flex items-center gap-4"><button className="text-blue-600"><Edit className="h-5 w-5" /></button><button className="text-red-600"><Trash2 className="h-5 w-5" /></button></div></td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+            {isModalOpen && <CouponModal closeModal={() => setIsModalOpen(false)} />}
+        </div>
+    );
+};
+
+const CouponModal = ({ closeModal }) => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold">Criar Novo Cupão</h3>
+                <button onClick={closeModal}><X className="h-6 w-6 text-gray-500" /></button>
+            </div>
+            <div className="space-y-4">
+                <div><label className="text-sm font-medium">Código do Cupão</label><input type="text" placeholder="Ex: VERAO10" className="w-full mt-1 p-2 border rounded-md" /></div>
+                <div><label className="text-sm font-medium">Tipo de Desconto</label><select className="w-full mt-1 p-2 border rounded-md"><option>Percentagem</option><option>Valor Fixo</option></select></div>
+                <div><label className="text-sm font-medium">Valor</label><input type="number" placeholder="10" className="w-full mt-1 p-2 border rounded-md" /></div>
+                <div><label className="text-sm font-medium">Associar à Campanha</label><select className="w-full mt-1 p-2 border rounded-md"><option>Nenhuma</option>{mockCampaigns.map(c => <option key={c.id}>{c.nome}</option>)}</select></div>
+            </div>
+            <div className="flex justify-end gap-4 mt-8">
+                <button onClick={closeModal} className="px-4 py-2 border rounded-lg">Cancelar</button>
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg">Criar Cupão</button>
+            </div>
+        </div>
+    </div>
+);
+
+
+const RetargetingAudienceBuilder = () => {
+    return (
+        <div className="space-y-6">
+            <h2 className="text-3xl font-bold text-gray-800">Construtor de Públicos de Retargeting</h2>
+            <p className="text-gray-600">Crie públicos personalizados para campanhas de retargeting com base nas ações dos utilizadores.</p>
+            <div className="bg-white p-8 rounded-lg shadow-sm">
+                <h3 className="text-xl font-bold mb-4">Criar Novo Público</h3>
+                <div className="border border-dashed p-6 rounded-lg">
+                    <div className="space-y-4">
+                        <p>Incluir utilizadores que correspondem a <select className="p-1 border rounded-md text-sm"><option>TODOS</option><option>QUALQUER</option></select> os seguintes critérios:</p>
+                        <AudienceRule />
+                        <AudienceRule />
+                    </div>
+                    <button className="mt-4 text-sm text-blue-600 flex items-center gap-2"><PlusCircle className="h-4 w-4" /> Adicionar regra</button>
+                </div>
+                <div className="flex justify-end mt-6">
+                    <button className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold">Guardar Público</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const AudienceRule = () => (
+    <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-md">
+        <select className="p-2 border rounded-md text-sm">
+            <option>Visitaram a Landing Page</option>
+            <option>Adicionaram ao Carrinho</option>
+            <option>Compraram um item específico</option>
+        </select>
+        <select className="p-2 border rounded-md text-sm">
+            <option>é igual a</option>
+            <option>contém</option>
+        </select>
+        <input type="text" placeholder="/sushi-verao" className="flex-1 p-2 border rounded-md text-sm" />
+        <button><Trash2 className="h-5 w-5 text-gray-500 hover:text-red-600" /></button>
+    </div>
+);
+
+
+const SettingsPage = () => {
+    const [activeTab, setActiveTab] = useState('profile');
+    const tabs = [
+        { id: 'profile', label: 'Perfil', icon: Users },
+        { id: 'integrations', label: 'Integrações', icon: Code },
+        { id: 'whitelabel', label: 'White-labeling', icon: Palette },
+        { id: 'api', label: 'Chaves de API', icon: Globe },
+    ];
+    return (
+        <div className="space-y-6">
+            <h2 className="text-3xl font-bold text-gray-800">Configurações</h2>
+            <div className="flex border-b">
+                {tabs.map(tab => (
+                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-3 text-sm font-medium ${activeTab === tab.id ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
+                        <tab.icon className="h-5 w-5" /> {tab.label}
+                    </button>
+                ))}
+            </div>
+            <div className="bg-white p-8 rounded-lg shadow-sm">
+                {activeTab === 'profile' && <SettingsProfile />}
+                {activeTab === 'integrations' && <SettingsIntegrations />}
+                {activeTab === 'whitelabel' && <SettingsWhiteLabeling />}
+                {activeTab === 'api' && <SettingsApiKeys />}
+            </div>
+        </div>
+    );
+};
+
+const SettingsProfile = () => (
+    <div>
+        <h3 className="text-xl font-bold mb-6">Perfil do Utilizador</h3>
+        <div className="space-y-4 max-w-md">
+            <div>
+                <label className="block text-sm font-medium text-gray-700">Nome Completo</label>
+                <input type="text" defaultValue="Joana Silva" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+            </div>
+            <div>
+                <label className="block text-sm font-medium text-gray-700">Endereço de E-mail</label>
+                <input type="email" defaultValue="joana.silva@example.com" className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm sm:text-sm" readOnly />
+            </div>
+            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">Guardar Alterações</button>
+        </div>
+    </div>
+);
+
+const SettingsIntegrations = () => (
+    <div>
+        <h3 className="text-xl font-bold mb-6">Integrações</h3>
+        <div className="space-y-4">
+            <IntegrationCard name="Meta Ads" connected />
+            <IntegrationCard name="Toast" connected={false} />
+            <IntegrationCard name="Stripe" connected />
+        </div>
+    </div>
+);
+
+const IntegrationCard = ({ name, connected }) => (
+    <div className="flex items-center justify-between p-4 border rounded-lg">
+        <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-gray-200 rounded-md"></div>
+            <p className="font-semibold">{name}</p>
+        </div>
+        {connected ? (
+            <div className="flex items-center gap-2">
+                <span className="text-sm text-green-600">Conectado</span>
+                <button className="text-sm text-red-600">Desconectar</button>
+            </div>
+        ) : (
+            <button className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-semibold">Conectar</button>
+        )}
+    </div>
+);
+
+const SettingsWhiteLabeling = () => (
+    <div>
+        <h3 className="text-xl font-bold mb-6">White-labeling</h3>
+        <div className="space-y-4 max-w-md">
+            <div>
+                <label className="block text-sm font-medium text-gray-700">Domínio Personalizado</label>
+                <input type="text" placeholder="anuncios.seurestaurante.com" className="mt-1 block w-full px-3 py-2 border rounded-md" />
+            </div>
+             <div>
+                <label className="block text-sm font-medium text-gray-700">Cor da Marca</label>
+                <input type="color" defaultValue="#3b82f6" className="mt-1" />
+            </div>
+             <div>
+                <label className="block text-sm font-medium text-gray-700">Logótipo da Marca</label>
+                <input type="file" className="mt-1 text-sm"/>
+            </div>
+        </div>
+    </div>
+);
+
+const SettingsApiKeys = () => (
+     <div>
+        <h3 className="text-xl font-bold mb-6">Chaves de API</h3>
+        <p className="text-sm text-gray-600 mb-4">Use estas chaves para integrar o Click2Order com as suas outras ferramentas.</p>
+        <div className="p-4 bg-gray-100 rounded-lg font-mono text-sm flex items-center justify-between">
+            <span>pub_sk_******************1234</span>
+            <button className="text-gray-500 hover:text-gray-800">Copiar</button>
+        </div>
+    </div>
+);
+
+const FAQPage = () => {
+    const faqs = [
+        { q: "O que é o Painel (Dashboard)?", a: "Imagine o painel como o cockpit de um avião. Ele mostra os controlos e informações mais importantes de relance. Aqui, você vê rapidamente quantos cliques os seus anúncios receberam, quantas vendas (conversões) foram feitas, quanto gastou e qual foi o seu retorno sobre o investimento (ROAS). É um resumo rápido da saúde das suas campanhas." },
+        { q: "Como funciona o Gestor de Campanhas?", a: "Pense nisto como a sua central de comando para todos os anúncios. Em vez de se perder na plataforma do Facebook, aqui você pode ver todas as suas campanhas num só lugar. Pode criar novas campanhas, ver quais estão ativas, pausá-las ou ver o desempenho de cada uma de forma simples e direta." },
+        { q: "Para que serve o Construtor de Landing Pages?", a: "Uma landing page é como um panfleto digital focado numa única oferta. Se você tem uma campanha para uma 'Promoção de Pizza', esta ferramenta cria uma página web simples e bonita apenas sobre essa promoção. O cliente clica no anúncio e vai direto para esta página, sem as distrações do seu site principal, o que aumenta muito a chance de ele fazer um pedido." },
+        { q: "O que faz a Integração de Menu?", a: "Esta funcionalidade conecta o seu menu digital diretamente à nossa plataforma. É como se o seu menu do restaurante e o nosso sistema falassem a mesma língua. Assim, você pode facilmente escolher quais itens quer promover nas suas campanhas e nós podemos mostrar os produtos certos nas landing pages, tudo automaticamente." },
+        { q: "Como devo usar a página de Análises?", a: "Se o painel é o cockpit, a página de análises é o relatório de voo completo. Aqui, você mergulha nos detalhes. Pode comparar o desempenho de diferentes campanhas, ver um 'funil' que mostra quantos clientes clicaram, quantos visitaram a página e quantos realmente compraram. Ajuda a entender exatamente onde o seu marketing está a funcionar bem e onde pode melhorar." },
+        { q: "O que é o Gerador de Cupões?", a: "É uma máquina de criar descontos. Você pode gerar códigos como 'PIZZA10' para dar 10% de desconto e associar esse cupão a uma campanha específica. Quando o cliente usar o código, nós saberemos que ele veio daquele anúncio, o que ajuda a medir o sucesso da campanha com ainda mais precisão." },
+    ];
+
+    return (
+        <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">Perguntas Frequentes (FAQ)</h2>
+            <p className="text-gray-600 mb-8">Explicamos cada funcionalidade como se estivéssemos a ensinar a um amigo.</p>
+            <div className="space-y-4">
+                {faqs.map((faq, index) => <FAQItem key={index} question={faq.q} answer={faq.a} />)}
+            </div>
+        </div>
+    );
+};
+
+const FAQItem = ({ question, answer }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <div className="bg-white p-4 rounded-lg shadow-sm">
+            <button onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center text-left">
+                <h3 className="font-semibold text-gray-800">{question}</h3>
+                <ChevronDown className={`h-5 w-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isOpen && (
+                <div className="mt-4 pt-4 border-t">
+                    <p className="text-gray-600 leading-relaxed">{answer}</p>
+                </div>
+            )}
+        </div>
+    );
+};
+
+
+export default App;

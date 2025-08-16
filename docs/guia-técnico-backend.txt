@@ -1,0 +1,22 @@
+**Prompt para LLM:**
+
+Crie um guia técnico completo para produção do sistema "Click2Order Ads Bridge". Explicação tipo Feynman, todos os passos externos ao VS Code.
+
+**Stack completo:**
+- Frontend: Next.js + Supabase + Vercel
+- Backend: Make.com + Supabase  
+- Integrações: Meta Ads API + Stripe + Menu providers
+- DNS: Domínio próprio
+
+**Ordem (mais difícil → fácil):**
+1. **Meta Ads API Production** (App Review)
+2. **Make.com Production + Scenarios**
+3. **Supabase Production Config**
+4. **Vercel Deployment**
+5. **Stripe Integration**
+6. **Domain + SSL**
+7. **Monitoring**
+
+**Para cada: onde acessar, botões, forms, docs necessários, tempo, erros comuns, verificação.**
+
+**Sem deixar nada "para depois" - completo em cada seção.**
